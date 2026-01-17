@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+
+# Conda / virtualenv
+.env
+.venv
+
+# Habitat / simulator outputs
+outputs/
+habitat_data/
+debug_frames/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
