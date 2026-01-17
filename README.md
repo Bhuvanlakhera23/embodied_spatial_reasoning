@@ -6,13 +6,13 @@ that can later be consumed by vision-language models for reasoning.
 
 ---
 
-##Current stage:
+Current stage:
 - Habitat-Sim based environment
 - Scripted camera embodiment
 - Sequential frame generation
 - Spatial trajectories
 
-###EXAMPLE:
+EXAMPLE:
 Episode 1
 - Pause and Observe
 - Rotate In Place
