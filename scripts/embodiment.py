@@ -2,9 +2,12 @@ import habitat_sim
 import numpy as np
 from habitat_sim.utils.common import quat_from_angle_axis
 
-CAMERA_HEIGHT = 0.8          # realistic torso camera
-MIN_BRIGHTNESS = 8.0
-MIN_STD = 6.0
+# -------------------------
+# Tunable constants
+# -------------------------
+CAMERA_HEIGHT = 0.8        # realistic torso camera height
+MIN_BRIGHTNESS = 2.0      # was 8.0 (too aggressive)
+MIN_STD = 2.0             # was 6.0 (too aggressive)
 MAX_SPAWN_TRIES = 80
 
 
@@ -18,7 +21,7 @@ def make_sim(scene_path):
     sensor.sensor_type = habitat_sim.SensorType.COLOR
     sensor.resolution = [512, 512]
 
-    # ✅ ONLY place camera height is applied
+    # Camera is mounted relative to agent origin
     sensor.position = [0.0, CAMERA_HEIGHT, 0.0]
     sensor.hfov = 90.0
 
@@ -42,16 +45,12 @@ def _is_bad_frame(img):
     mean = img.mean()
     std = img.std()
 
-    if mean < MIN_BRIGHTNESS:
+    # Only reject near-black frames
+    if mean < 5.0:
         return True
 
-    if std < MIN_STD:
-        return True
-
-    # ceiling dominance check
-    top = img[:40].mean()
-    mid = img[200:300].mean()
-    if abs(top - mid) < 1.2:
+    # Only reject totally flat frames
+    if std < 3.0:
         return True
 
     return False
@@ -64,17 +63,18 @@ def find_valid_spawn(sim):
     for i in range(MAX_SPAWN_TRIES):
         pos = pf.get_random_navigable_point()
 
-        # ✅ DO NOT add camera height here
+        # DO NOT add camera height here
         state = habitat_sim.AgentState()
-        state.position = pos
+        state.position = np.array([pos[0], pos[1], pos[2]], dtype=np.float32)
         state.rotation = _random_yaw()
 
         agent.set_state(state)
+
         obs = sim.get_sensor_observations()
         rgb = obs.get("rgb")
 
         if not _is_bad_frame(rgb):
-            print(f"Spawn accepted after {i+1} tries")
+            print(f"Spawn accepted after {i + 1} tries")
             return state
 
     raise RuntimeError("Failed to find a valid spawn after multiple attempts")
@@ -88,7 +88,7 @@ def reset_agent(sim, position=None):
         agent.set_state(state)
         return agent
 
-    # Manual placement path (no height hacks)
+    # Manual placement path
     state = habitat_sim.AgentState()
     state.position = np.array(position, dtype=np.float32)
     state.rotation = _random_yaw()
